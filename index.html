@@ -79,6 +79,14 @@
   .datos dt { font-size: 12px; color: var(--gris); text-transform: uppercase; letter-spacing: .04em; }
   .datos dd { margin: 0; font-size: 14px; }
   .acciones { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+  .fichas { border-top: 1px solid var(--borde); margin-top: 16px; padding-top: 14px; }
+  .fichas h3 { margin: 0 0 2px; font-size: 14px; color: var(--verde); }
+  .fichas p { margin: 0 0 10px; font-size: 12.5px; color: var(--gris); }
+  .pdfs { display: flex; gap: 8px; flex-wrap: wrap; }
+  .pdf { background: var(--blanco); border: 1px solid var(--borde); border-radius: 8px; padding: 7px 11px;
+    font: inherit; font-size: 13.5px; cursor: pointer; }
+  .pdf:hover { border-color: var(--verde-2); }
+  .pdf small { color: var(--verde); font-weight: 600; margin-left: 4px; }
   .fecha { position: sticky; top: 0; background: var(--fondo); padding: 18px 0 8px; font-weight: 700; z-index: 1; }
   .fecha small { font-weight: 400; color: var(--gris); margin-left: 6px; }
   .cambio { background: var(--blanco); border: 1px solid var(--borde); border-left-width: 4px; border-radius: 8px;
@@ -150,6 +158,7 @@
 const $ = (s, el = document) => el.querySelector(s);
 const ALMACEN = "fitowatch-clave";
 let D = null;            // datos descifrados
+let CLAVE = null;        // clave AES (también descifra las fichas PDF)
 let PORREG = {};         // nº registro -> producto
 let filtro = "todos";
 
@@ -221,6 +230,7 @@ async function descifrar(clave) {
 
 async function entrarCon(clave) {
   D = await descifrar(clave);
+  CLAVE = clave;
   PORREG = {};
   for (const p of D.productos) {
     PORREG[p.r] = p;
@@ -388,6 +398,46 @@ function fotoAnterior(fecha, apartado) {
   return prev.length ? prev.at(-1) : "";
 }
 
+/* ───────────── fichas PDF guardadas ───────────── */
+function fichasHTML(p) {
+  const v = (D.pdfs || {})[p.r] || [];
+  if (!v.length) return "";
+  const botones = v.map(([fecha, fich], i) =>
+    `<button type="button" class="pdf" data-f="${esc(fich)}" data-d="${esc(fecha)}">📄 ${fechaES(fecha)}` +
+    (i === 0 ? ` <small>más reciente</small>` : "") + `</button>`).join("");
+  return `<div class="fichas"><h3>Fichas de registro guardadas</h3>
+    <p>Se guarda una ficha nueva cada vez que cambia algo del producto. La fecha es la de la foto semanal en que se descargó.</p>
+    <div class="pdfs">${botones}</div><div class="error" id="error-pdf" role="alert"></div></div>`;
+}
+
+async function abrirFicha(p, fich, fecha, btn) {
+  // La pestaña se abre ya (dentro del clic) para que el navegador no la bloquee; luego se le pone el PDF.
+  const ventana = window.open("", "_blank");
+  const texto = btn.innerHTML, err = $("#error-pdf");
+  btn.disabled = true; btn.textContent = "Abriendo…"; err.textContent = "";
+  try {
+    const r = await fetch("fichas/" + fich);
+    if (!r.ok) throw new Error("no se encuentra la ficha (" + r.status + ")");
+    const bin = new Uint8Array(await r.arrayBuffer());
+    if (String.fromCharCode(...bin.slice(0, 3)) !== "FWP") throw new Error("formato desconocido");
+    const pdf = await crypto.subtle.decrypt(
+      { name: "AES-GCM", iv: bin.slice(3, 15), additionalData: bin.slice(0, 3) }, CLAVE, bin.slice(15));
+    const url = URL.createObjectURL(new Blob([pdf], { type: "application/pdf" }));
+    if (ventana) ventana.location.href = url;
+    else {   // ventanas emergentes bloqueadas: se descarga
+      const a = document.createElement("a");
+      a.href = url; a.download = `${p.n.replace(/[^\wÀ-ÿ .-]+/g, "_")} ${fecha}.pdf`;
+      document.body.appendChild(a); a.click(); a.remove();
+    }
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } catch (e) {
+    if (ventana) ventana.close();
+    err.textContent = "No se ha podido abrir la ficha: " + (e.message || e);
+  } finally {
+    btn.disabled = false; btn.innerHTML = texto;
+  }
+}
+
 function verProducto(p) {
   $("#inicio").classList.add("oculto");
   const s = $("#producto");
@@ -408,6 +458,7 @@ function verProducto(p) {
         <button type="button" class="boton" id="excel">⬇ Descargar Excel</button>
         <a class="boton sec" href="https://servicio.mapa.gob.es/regfiweb" target="_blank" rel="noopener">Registro oficial ↗</a>
       </div>
+      ${fichasHTML(p)}
     </div>`;
   if (!filas.length) {
     html += `<div class="vacio">Sin cambios desde el ${fechaES(D.fotos[0])}.</div>`;
@@ -428,6 +479,7 @@ function verProducto(p) {
   s.classList.remove("oculto");
   $("#volver").onclick = () => { location.hash = ""; };
   $("#excel").onclick = () => descargarExcel(p);
+  s.querySelectorAll("button.pdf").forEach(b => b.onclick = () => abrirFicha(p, b.dataset.f, b.dataset.d, b));
   window.scrollTo(0, 0);
 }
 
