@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231F4E3D'/%3E%3Cpath d='M9 23c0-9 6-14 15-14-1 9-6 15-15 14zm0 0 8-8' stroke='%23fff' stroke-width='2.2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<title>FitoWatch · Historial del Registro de Fitosanitarios</title>
+<style>
+  :root {
+    --verde: #1F4E3D; --verde-2: #2c6a54; --verde-claro: #e8f0ec; --tinta: #1d2420; --gris: #5f6b66;
+    --borde: #d9e1dc; --fondo: #f6f8f7; --blanco: #fff;
+    --anadido: #E2F0D9; --anadido-t: #2e6b1f; --eliminado: #FBE5D6; --eliminado-t: #9a3d12;
+    --modificado: #FFF2CC; --modificado-t: #7a5b00;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--fondo); color: var(--tinta);
+    font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
+  button, input { font: inherit; color: inherit; }
+  a { color: var(--verde); }
+  a.item, a.boton { text-decoration: none; color: inherit; }
+  a.boton.sec { color: var(--verde); }
+  .oculto { display: none !important; }
+
+  header { background: var(--verde); color: #fff; padding: 14px 18px; }
+  header .marca { font-weight: 700; letter-spacing: .06em; font-size: 13px; opacity: .85; }
+  header h1 { margin: 2px 0 0; font-size: 18px; font-weight: 600; }
+  main { max-width: 920px; margin: 0 auto; padding: 18px 16px 60px; }
+
+  /* acceso */
+  #acceso { max-width: 420px; margin: 8vh auto 0; background: var(--blanco); border: 1px solid var(--borde);
+    border-radius: 12px; padding: 26px 22px; }
+  #acceso h2 { margin: 0 0 6px; font-size: 19px; }
+  #acceso p { margin: 0 0 16px; color: var(--gris); font-size: 14px; }
+  .campo { width: 100%; padding: 12px 14px; border: 1px solid var(--borde); border-radius: 8px; background: #fff;
+    font-size: 16px; }
+  .campo:focus { outline: 2px solid var(--verde-2); outline-offset: -1px; border-color: transparent; }
+  .recordar { display: flex; gap: 8px; align-items: center; margin: 12px 0 16px; font-size: 14px; color: var(--gris); }
+  .recordar input { width: 18px; height: 18px; accent-color: var(--verde); }
+  .boton { display: inline-flex; align-items: center; gap: 8px; border: 0; border-radius: 8px; padding: 11px 16px;
+    background: var(--verde); color: #fff; font-weight: 600; cursor: pointer; }
+  .boton:hover { background: var(--verde-2); }
+  .boton:disabled { opacity: .6; cursor: default; }
+  .boton.sec { background: var(--blanco); color: var(--verde); border: 1px solid var(--borde); }
+  .boton.sec:hover { background: var(--verde-claro); }
+  #acceso .boton { width: 100%; justify-content: center; }
+  .error { color: var(--eliminado-t); font-size: 14px; margin-top: 12px; min-height: 1em; }
+
+  /* buscador */
+  .buscador { position: sticky; top: 0; z-index: 2; background: var(--fondo); padding: 4px 0 12px; }
+  .buscador .campo { font-size: 17px; padding: 14px 16px; }
+  .filtros { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; align-items: center; }
+  .chip { border: 1px solid var(--borde); background: var(--blanco); border-radius: 999px; padding: 6px 12px;
+    font-size: 13px; cursor: pointer; }
+  .chip[aria-pressed="true"] { background: var(--verde); color: #fff; border-color: var(--verde); }
+  .resumen { color: var(--gris); font-size: 13px; margin: 2px 0 14px; }
+  .lista { display: grid; gap: 8px; }
+  .item { display: block; width: 100%; text-align: left; background: var(--blanco); border: 1px solid var(--borde);
+    border-radius: 10px; padding: 12px 14px; cursor: pointer; }
+  .item:hover { border-color: var(--verde-2); }
+  .item .fila1 { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+  .item .nombre { font-weight: 600; }
+  .item .ma { color: var(--verde); font-size: 14px; }
+  .item .det { color: var(--gris); font-size: 13px; }
+  .insignia { flex: none; font-size: 12px; border-radius: 999px; padding: 2px 9px; background: var(--verde-claro);
+    color: var(--verde); font-weight: 600; white-space: nowrap; }
+  .insignia.cero { background: #eef1ef; color: var(--gris); font-weight: 400; }
+  .insignia.baja { background: var(--eliminado); color: var(--eliminado-t); }
+  .mas { color: var(--gris); font-size: 13px; text-align: center; padding: 10px; }
+  h2.sec { font-size: 15px; margin: 22px 0 10px; color: var(--verde); }
+
+  /* ficha de producto */
+  .volver { background: none; border: 0; color: var(--verde); font-weight: 600; cursor: pointer; padding: 4px 0;
+    margin-bottom: 10px; }
+  .cabecera { background: var(--blanco); border: 1px solid var(--borde); border-radius: 12px; padding: 18px; }
+  .cabecera h2 { margin: 0 0 4px; font-size: 22px; }
+  .cabecera .ma { color: var(--verde); font-weight: 600; margin-bottom: 12px; }
+  .datos { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px 18px; margin: 0; }
+  .datos dt { font-size: 12px; color: var(--gris); text-transform: uppercase; letter-spacing: .04em; }
+  .datos dd { margin: 0; font-size: 14px; }
+  .acciones { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+  .fecha { position: sticky; top: 0; background: var(--fondo); padding: 18px 0 8px; font-weight: 700; z-index: 1; }
+  .fecha small { font-weight: 400; color: var(--gris); margin-left: 6px; }
+  .cambio { background: var(--blanco); border: 1px solid var(--borde); border-left-width: 4px; border-radius: 8px;
+    padding: 10px 12px; margin-bottom: 8px; }
+  .cambio.t-anadido { border-left-color: #6aa84f; }
+  .cambio.t-eliminado { border-left-color: #d9734a; }
+  .cambio.t-modificado { border-left-color: #e0b100; }
+  .cambio .cab { display: flex; gap: 8px; flex-wrap: wrap; align-items: baseline; margin-bottom: 4px; }
+  .tipo { font-size: 12px; font-weight: 700; border-radius: 4px; padding: 1px 7px; }
+  .tipo.t-anadido { background: var(--anadido); color: var(--anadido-t); }
+  .tipo.t-eliminado { background: var(--eliminado); color: var(--eliminado-t); }
+  .tipo.t-modificado { background: var(--modificado); color: var(--modificado-t); }
+  .apartado { font-size: 13px; color: var(--gris); }
+  .elem { font-weight: 600; font-size: 14px; }
+  .valores { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; }
+  .valores.uno { grid-template-columns: 1fr; }
+  .valor { font-size: 13.5px; border-radius: 6px; padding: 7px 9px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .valor .lbl { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; opacity: .7; margin-bottom: 2px; }
+  .valor.antes { background: #fbf1ec; }
+  .valor.despues { background: #eef6ea; }
+  .kv { margin: 0; padding: 0; list-style: none; }
+  .kv li { margin: 1px 0; }
+  .kv b { font-weight: 600; }
+  .vacio { background: var(--blanco); border: 1px dashed var(--borde); border-radius: 10px; padding: 18px; color: var(--gris);
+    text-align: center; margin-top: 16px; }
+  footer { color: var(--gris); font-size: 12px; text-align: center; padding: 30px 16px; }
+  @media (max-width: 600px) {
+    .valores { grid-template-columns: 1fr; }
+    .cabecera h2 { font-size: 19px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="marca">FITOWATCH</div>
+  <h1>Historial del Registro de Productos Fitosanitarios</h1>
+</header>
+<main>
+  <form id="acceso" class="oculto" autocomplete="on">
+    <h2>Acceso restringido</h2>
+    <p>Introduce la contraseña que te han facilitado para consultar el historial.</p>
+    <input id="usuario" name="username" value="fitowatch" autocomplete="username" class="oculto" aria-hidden="true" tabindex="-1">
+    <input id="clave" class="campo" type="password" autocomplete="current-password" placeholder="Contraseña" required>
+    <label class="recordar"><input id="recordar" type="checkbox" checked> Recordar en este dispositivo</label>
+    <button class="boton" id="entrar" type="submit">Entrar</button>
+    <div class="error" id="error" role="alert"></div>
+  </form>
+
+  <section id="inicio" class="oculto">
+    <div class="buscador">
+      <input id="q" class="campo" type="search" placeholder="Busca por nombre, nº de registro, materia activa o titular"
+             autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Buscar producto">
+      <div class="filtros">
+        <button type="button" class="chip" data-f="todos" aria-pressed="true">Todos</button>
+        <button type="button" class="chip" data-f="cambios" aria-pressed="false">Con cambios</button>
+        <button type="button" class="chip" data-f="bajas" aria-pressed="false">Dados de baja</button>
+      </div>
+    </div>
+    <div class="resumen" id="resumen"></div>
+    <div id="resultados"></div>
+  </section>
+
+  <section id="producto" class="oculto"></section>
+</main>
+<footer id="pie" class="oculto"></footer>
+
+<script>
+"use strict";
+const $ = (s, el = document) => el.querySelector(s);
+const ALMACEN = "fitowatch-clave";
+let D = null;            // datos descifrados
+let PORREG = {};         // nº registro -> producto
+let filtro = "todos";
+
+/* ───────────── utilidades ───────────── */
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const sinTildes = s => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+const compacto = s => sinTildes(s).replace(/[^a-z0-9]/g, "");
+const fechaES = iso => iso ? iso.slice(8, 10) + "/" + iso.slice(5, 7) + "/" + iso.slice(0, 4) : "";
+const fechaReg = s => /^\d{4}\/\d{2}\/\d{2}/.test(s || "") ? s.slice(8, 10) + "/" + s.slice(5, 7) + "/" + s.slice(0, 4) : (s || "");
+const idHash = r => "p-" + String(r).replace(/[^A-Za-z0-9]+/g, "-").replace(/-+$/, "");
+const b64 = {
+  de: s => Uint8Array.from(atob(s), c => c.charCodeAt(0)),
+  a: u => btoa(String.fromCharCode(...new Uint8Array(u)))
+};
+const almacen = {
+  leer() { try { return localStorage.getItem(ALMACEN); } catch { return null; } },
+  guardar(v) { try { localStorage.setItem(ALMACEN, v); } catch {} },
+  borrar() { try { localStorage.removeItem(ALMACEN); } catch {} }
+};
+
+const CAMPOS = {
+  Fecha_Caducidad: "Fecha de caducidad", Fecha_Cancelacion: "Fecha de cancelación",
+  Fecha_LimiteVenta: "Fecha límite de venta", Fecha_Registro: "Fecha de registro",
+  Condicionamiento: "Condicionamiento", Fabrica: "Fábrica", Fabricante: "Fabricante", Titular: "Titular",
+  Estado: "Estado", Formulado: "Formulado", Nombre: "Nombre", Num_Registro: "Nº registro",
+  CondicionamientoEspecifico: "Condicionamiento específico", Dosis_Max: "Dosis máx.", Dosis_Min: "Dosis mín.",
+  VolumenMax: "Volumen máx.", Volumen_Min: "Volumen mín.", "Volumen Caldo": "Volumen de caldo",
+  "Plazo Seguridad": "Plazo de seguridad", "Unidad Medida dosis": "Unidad de dosis", "Unidades Volumen": "Unidades de volumen",
+  TipoUsuario: "Tipo de usuario", SistemaCultivo: "Sistema de cultivo", MetodoAplicacion: "Método de aplicación",
+  Ambito: "Ámbito", Nombre_Origen: "Nombre de origen", "Nombre Sustancia": "Sustancia", Concentracion: "Concentración",
+  DescripcionNota: "Unidad", CodInternoFabricante: "Código interno del fabricante"
+};
+const APARTADOS = {
+  Usos: "Usos", Composicion: "Composición", Otrasdenominaciones: "Otras denominaciones",
+  Otrosnombres: "Otros nombres", Importacionesparalelas: "Importaciones paralelas"
+};
+const nombreCampo = c => CAMPOS[c] || String(c || "").replace(/_/g, " ");
+const nombreApartado = a => APARTADOS[a] || a;
+const claseTipo = t => /añad|alta|nueva/i.test(t) ? "t-anadido" : /elimin|baja/i.test(t) ? "t-eliminado" : "t-modificado";
+
+/* ───────────── descifrado ───────────── */
+let datosBin = null;
+async function cargarBin() {
+  if (datosBin) return datosBin;
+  if (window.DATOS_B64) {            // vista previa en un solo fichero (datos incrustados)
+    datosBin = b64.de(window.DATOS_B64);
+  } else {
+    const r = await fetch("datos.bin", { cache: "no-cache" });
+    if (!r.ok) throw new Error("No se encuentran los datos (" + r.status + ")");
+    datosBin = new Uint8Array(await r.arrayBuffer());
+  }
+  if (String.fromCharCode(...datosBin.slice(0, 3)) !== "FW1") throw new Error("Formato de datos desconocido");
+  return datosBin;
+}
+async function claveDesdeContrasena(pw) {
+  const bin = await cargarBin();
+  const iter = new DataView(bin.buffer, bin.byteOffset + 3, 4).getUint32(0);
+  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(pw), "PBKDF2", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey({ name: "PBKDF2", salt: bin.slice(7, 23), iterations: iter, hash: "SHA-256" },
+    base, { name: "AES-GCM", length: 256 }, true, ["decrypt"]);
+}
+async function descifrar(clave) {
+  const bin = await cargarBin();
+  const plano = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: bin.slice(23, 35), additionalData: bin.slice(0, 3) }, clave, bin.slice(35));
+  const flujo = new Blob([plano]).stream().pipeThrough(new DecompressionStream("gzip"));
+  return JSON.parse(await new Response(flujo).text());
+}
+
+async function entrarCon(clave) {
+  D = await descifrar(clave);
+  PORREG = {};
+  for (const p of D.productos) {
+    PORREG[p.r] = p;
+    p._b = sinTildes([p.n, p.m, p.t, p.f, p.r].join(" "));
+    p._c = compacto(p.r);
+    p._h = idHash(p.r);
+  }
+  $("#acceso").classList.add("oculto");
+  const pie = $("#pie");
+  pie.textContent = `Datos del Registro oficial del MAPA, fotos semanales del ${fechaES(D.fotos[0])} al ` +
+    `${fechaES(D.fotos.at(-1))}. Información orientativa: la referencia es siempre el registro oficial.`;
+  pie.classList.remove("oculto");
+  const salir = document.createElement("div");
+  salir.innerHTML = `<button type="button" class="volver" style="margin-top:10px">Cerrar sesión en este dispositivo</button>`;
+  salir.firstChild.onclick = () => { almacen.borrar(); location.hash = ""; location.reload(); };
+  pie.appendChild(salir);
+  ruta();
+}
+
+$("#acceso").addEventListener("submit", async ev => {
+  ev.preventDefault();
+  const pw = $("#clave").value, btn = $("#entrar"), err = $("#error");
+  if (!pw) return;
+  btn.disabled = true; btn.textContent = "Comprobando…"; err.textContent = "";
+  try {
+    const clave = await claveDesdeContrasena(pw);
+    await entrarCon(clave);
+    if ($("#recordar").checked) almacen.guardar(b64.a(await crypto.subtle.exportKey("raw", clave)));
+  } catch (e) {
+    err.textContent = e && e.name === "OperationError" ? "Contraseña incorrecta." : "No se ha podido abrir: " + (e.message || e);
+  } finally {
+    btn.disabled = false; btn.textContent = "Entrar";
+  }
+});
+
+async function arrancar() {
+  if (!window.crypto?.subtle || typeof DecompressionStream === "undefined") {
+    $("#acceso").classList.remove("oculto");
+    $("#error").textContent = "Este navegador es demasiado antiguo para abrir el historial. Actualízalo o usa otro.";
+    $("#entrar").disabled = true;
+    return;
+  }
+  const guardada = almacen.leer();
+  if (guardada) {
+    try {
+      const clave = await crypto.subtle.importKey("raw", b64.de(guardada), "AES-GCM", true, ["decrypt"]);
+      await entrarCon(clave);
+      return;
+    } catch { almacen.borrar(); }
+  }
+  $("#acceso").classList.remove("oculto");
+  $("#clave").focus();
+}
+
+/* ───────────── navegación ───────────── */
+function ruta() {
+  if (!D) return;
+  const h = location.hash.slice(1);
+  const p = h.startsWith("p-") && D.productos.find(x => x._h === h);
+  if (p) { verProducto(p); return; }
+  $("#producto").classList.add("oculto");
+  $("#inicio").classList.remove("oculto");
+  buscar();
+}
+window.addEventListener("hashchange", ruta);
+
+/* ───────────── búsqueda ───────────── */
+let temporizador;
+$("#q").addEventListener("input", () => { clearTimeout(temporizador); temporizador = setTimeout(buscar, 120); });
+document.querySelectorAll(".chip").forEach(c => c.addEventListener("click", () => {
+  filtro = c.dataset.f;
+  document.querySelectorAll(".chip").forEach(x => x.setAttribute("aria-pressed", String(x === c)));
+  buscar();
+}));
+
+function pasaFiltro(p) {
+  return filtro === "cambios" ? p.nc > 0 : filtro === "bajas" ? !p.en : true;
+}
+
+function itemHTML(p) {
+  const ins = !p.en ? `<span class="insignia baja">Dado de baja</span>`
+    : p.nc ? `<span class="insignia">${p.nc} cambio${p.nc === 1 ? "" : "s"}</span>`
+    : `<span class="insignia cero">sin cambios</span>`;
+  const extra = !p.en && p.nc ? ` · ${p.nc} cambio${p.nc === 1 ? "" : "s"}` : "";
+  return `<a class="item" href="#${p._h}">
+    <div class="fila1"><span class="nombre">${esc(p.n)}</span>${ins}</div>
+    ${p.m ? `<div class="ma">${esc(p.m)}</div>` : ""}
+    <div class="det">Nº ${esc(p.r)} · ${esc(p.t)}${extra}</div></a>`;
+}
+
+function buscar() {
+  const q = $("#q").value.trim();
+  const res = $("#resultados");
+  const conCambios = D.productos.filter(p => p.nc > 0).length;
+  if (!q && filtro === "todos") {
+    $("#resumen").textContent = `${D.productos.length.toLocaleString("es")} productos · ${conCambios} con cambios ` +
+      `desde el ${fechaES(D.fotos[0])} · última foto: ${fechaES(D.fotos.at(-1))}`;
+    res.innerHTML = novedadesHTML();
+    const b = $("#todo"); if (b) b.onclick = () => descargarExcel(null);
+    return;
+  }
+  const palabras = sinTildes(q).split(/\s+/).filter(Boolean);
+  const qc = compacto(q);
+  let lista = D.productos.filter(p => pasaFiltro(p) &&
+    (palabras.every(w => p._b.includes(w)) || (qc.length >= 3 && p._c.includes(qc))));
+  const pq = sinTildes(q);
+  const peso = p => p._c === qc ? 0 : sinTildes(p.n).startsWith(pq) ? 1 : sinTildes(p.n).includes(pq) ? 2 : 3;
+  lista.sort((a, b) => peso(a) - peso(b) || b.nc - a.nc || a.n.localeCompare(b.n, "es"));
+  $("#resumen").textContent = lista.length ? `${lista.length} producto${lista.length === 1 ? "" : "s"}` : "";
+  const MAX = 80;
+  res.innerHTML = lista.length
+    ? `<div class="lista">${lista.slice(0, MAX).map(itemHTML).join("")}</div>` +
+      (lista.length > MAX ? `<div class="mas">…y ${lista.length - MAX} más. Afina la búsqueda para verlos.</div>` : "")
+    : `<div class="vacio">No hay ningún producto que coincida con «${esc(q)}».</div>`;
+}
+
+function novedadesHTML() {
+  const fechas = new Set();
+  for (const filas of Object.values(D.cambios)) for (const f of filas) fechas.add(f[0]);
+  const ultima = [...fechas].sort().at(-1);
+  let html = `<div class="acciones" style="margin:0 0 6px"><button type="button" class="boton sec" id="todo">⬇ Descargar historial completo (Excel)</button></div>`;
+  if (!ultima) return html + `<div class="vacio">Todavía no hay cambios registrados.</div>`;
+  const prods = D.productos.filter(p => (D.cambios[p.r] || []).some(f => f[0] === ultima));
+  prods.sort((a, b) => cuenta(b, ultima) - cuenta(a, ultima) || a.n.localeCompare(b.n, "es"));
+  html += `<h2 class="sec">Últimas novedades · ${fechaES(ultima)} (${prods.length} producto${prods.length === 1 ? "" : "s"})</h2>`;
+  html += `<div class="lista">${prods.map(itemHTML).join("")}</div>`;
+  return html;
+}
+const cuenta = (p, fecha) => (D.cambios[p.r] || []).filter(f => f[0] === fecha).length;
+
+/* ───────────── ficha de producto ───────────── */
+function valorHTML(t) {
+  t = String(t ?? "");
+  // «Agente: X; Dosis_Max: 2; …» (usos completos añadidos o eliminados): una línea por dato, sin códigos internos
+  if (/^[^:;]{1,40}: /.test(t) && t.includes("; ")) {
+    const partes = t.split("; ").map(s => { const i = s.indexOf(": "); return i > 0 ? [s.slice(0, i), s.slice(i + 2)] : [null, s]; });
+    if (partes.every(([k]) => k)) {
+      return `<ul class="kv">${partes.filter(([k]) => !/^Codigo/i.test(k))
+        .map(([k, v]) => `<li><b>${esc(nombreCampo(k))}:</b> ${esc(v)}</li>`).join("")}</ul>`;
+    }
+  }
+  return esc(t.replace(/\r\n?/g, "\n"));
+}
+
+function cambioHTML(f) {
+  const [, apartado, tipo, elem, campo, antes, despues] = f;
+  const ct = claseTipo(tipo);
+  const tit = [elem, campo ? nombreCampo(campo) : ""].filter(Boolean).join(" · ");
+  let vals;
+  if (antes && despues) {
+    vals = `<div class="valores"><div class="valor antes"><span class="lbl">Antes</span>${valorHTML(antes)}</div>` +
+           `<div class="valor despues"><span class="lbl">Después</span>${valorHTML(despues)}</div></div>`;
+  } else if (antes || despues) {
+    const lado = despues ? "despues" : "antes";
+    vals = `<div class="valores uno"><div class="valor ${lado}">${valorHTML(despues || antes)}</div></div>`;
+  } else vals = "";
+  return `<div class="cambio ${ct}"><div class="cab"><span class="tipo ${ct}">${esc(tipo)}</span>` +
+         `<span class="apartado">${esc(nombreApartado(apartado))}</span></div>` +
+         (tit ? `<div class="elem">${esc(tit)}</div>` : "") + vals + `</div>`;
+}
+
+function fotoAnterior(fecha, apartado) {
+  const lista = String(apartado).startsWith("Ficha:") ? D.fotos_fichas : D.fotos;
+  const prev = lista.filter(x => x < fecha);
+  return prev.length ? prev.at(-1) : "";
+}
+
+function verProducto(p) {
+  $("#inicio").classList.add("oculto");
+  const s = $("#producto");
+  const filas = D.cambios[p.r] || [];
+  const dato = (k, v) => v ? `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>` : "";
+  let html = `<button type="button" class="volver" id="volver">‹ Volver a la búsqueda</button>
+    <div class="cabecera">
+      <h2>${esc(p.n)}</h2>
+      ${p.m ? `<div class="ma">${esc(p.m)}</div>` : ""}
+      <dl class="datos">
+        ${dato("Nº registro", p.r)}
+        ${dato("Estado", p.en ? p.e : "Dado de baja del registro")}
+        ${dato("Caducidad", fechaReg(p.c))}
+        ${dato("Titular", p.t)}
+        ${dato("Formulado", p.f)}
+      </dl>
+      <div class="acciones">
+        <button type="button" class="boton" id="excel">⬇ Descargar Excel</button>
+        <a class="boton sec" href="https://servicio.mapa.gob.es/regfiweb" target="_blank" rel="noopener">Registro oficial ↗</a>
+      </div>
+    </div>`;
+  if (!filas.length) {
+    html += `<div class="vacio">Sin cambios desde el ${fechaES(D.fotos[0])}.</div>`;
+  } else {
+    let actual = null;
+    for (const f of filas) {
+      if (f[0] !== actual) {
+        actual = f[0];
+        const prev = fotoAnterior(f[0], f[1]);
+        const n = filas.filter(x => x[0] === actual).length;
+        html += `<div class="fecha">${fechaES(actual)}<small>${n} cambio${n === 1 ? "" : "s"}` +
+                (prev ? ` · respecto a la foto del ${fechaES(prev)}` : "") + `</small></div>`;
+      }
+      html += cambioHTML(f);
+    }
+  }
+  s.innerHTML = html;
+  s.classList.remove("oculto");
+  $("#volver").onclick = () => { location.hash = ""; };
+  $("#excel").onclick = () => descargarExcel(p);
+  window.scrollTo(0, 0);
+}
+
+/* ───────────── Excel (xlsx mínimo, sin librerías) ───────────── */
+const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(u) { let c = 0xFFFFFFFF; for (let i = 0; i < u.length; i++) c = CRC[(c ^ u[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+function zip(ficheros) {   // ZIP sin compresión (Excel lo abre sin problema)
+  const enc = new TextEncoder(), partes = [], centro = [];
+  let pos = 0;
+  for (const [nombre, texto] of ficheros) {
+    const n = enc.encode(nombre), d = enc.encode(texto), crc = crc32(d);
+    const cab = new DataView(new ArrayBuffer(30));
+    [[0, 0x04034b50, 4], [4, 20, 2], [6, 0x0800, 2], [8, 0, 2], [10, 0, 2], [12, 0x21, 2], [14, crc, 4],
+     [18, d.length, 4], [22, d.length, 4], [26, n.length, 2], [28, 0, 2]].forEach(([o, v, l]) => l === 4 ? cab.setUint32(o, v, true) : cab.setUint16(o, v, true));
+    const cen = new DataView(new ArrayBuffer(46));
+    [[0, 0x02014b50, 4], [4, 20, 2], [6, 20, 2], [8, 0x0800, 2], [10, 0, 2], [12, 0, 2], [14, 0x21, 2], [16, crc, 4],
+     [20, d.length, 4], [24, d.length, 4], [28, n.length, 2], [30, 0, 2], [32, 0, 2], [34, 0, 2], [36, 0, 2], [38, 0, 4], [42, pos, 4]]
+      .forEach(([o, v, l]) => l === 4 ? cen.setUint32(o, v, true) : cen.setUint16(o, v, true));
+    partes.push(cab, n, d); centro.push(cen, n);
+    pos += 30 + n.length + d.length;
+  }
+  const tam = centro.reduce((s, x) => s + x.byteLength, 0);
+  const fin = new DataView(new ArrayBuffer(22));
+  [[0, 0x06054b50, 4], [8, ficheros.length, 2], [10, ficheros.length, 2], [12, tam, 4], [16, pos, 4]]
+    .forEach(([o, v, l]) => l === 4 ? fin.setUint32(o, v, true) : fin.setUint16(o, v, true));
+  return new Blob([...partes, ...centro, fin], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+}
+const xml = s => String(s ?? "").replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "").replace(/\r\n?/g, "\n")
+  .replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])).slice(0, 32000);
+const col = i => { let s = ""; i++; while (i) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = (i - m - 1) / 26; } return s; };
+const serie = iso => (Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10)) - Date.UTC(1899, 11, 30)) / 864e5;
+
+// estilos: 0 normal · 1 cabecera · 2 título · 3 etiqueta · 4..7 texto (sin color, añadido, eliminado, modificado) · 8..11 fecha
+const ESTILOS = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<numFmts count="1"><numFmt numFmtId="164" formatCode="dd/mm/yyyy"/></numFmts>
+<fonts count="4"><font><sz val="10"/><name val="Arial"/></font><font><b/><sz val="10"/><color rgb="FFFFFFFF"/><name val="Arial"/></font>
+<font><b/><sz val="13"/><name val="Arial"/></font><font><b/><sz val="10"/><name val="Arial"/></font></fonts>
+<fills count="6"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FF1F4E3D"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFE2F0D9"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFFBE5D6"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFFFF2CC"/></patternFill></fill></fills>
+<borders count="1"><border/></borders>
+<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+<cellXfs count="12"><xf fillId="0" numFmtId="0" borderId="0" xfId="0" fontId="0"/>
+<xf numFmtId="0" borderId="0" xfId="0" fontId="1" fillId="2" applyFont="1" applyFill="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>
+<xf fillId="0" numFmtId="0" borderId="0" xfId="0" fontId="2" applyFont="1"/><xf fillId="0" numFmtId="0" borderId="0" xfId="0" fontId="3" applyFont="1"/>
+${[0, 3, 4, 5].map(f => `<xf numFmtId="0" borderId="0" xfId="0" fontId="0" fillId="${f}" applyFill="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf>`).join("")}
+${[0, 3, 4, 5].map(f => `<xf borderId="0" xfId="0" fontId="0" fillId="${f}" numFmtId="164" applyNumberFormat="1" applyFill="1" applyAlignment="1"><alignment vertical="top"/></xf>`).join("")}
+</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+
+function hojaXML(filasCab, cabecera, filas, anchos) {
+  let r = 0, out = [];
+  const fila = celdas => { r++; out.push(`<row r="${r}">` + celdas.map((c, i) => {
+    if (c == null || c.v === "" || c.v == null) return "";
+    const ref = col(i) + r, s = c.s ? ` s="${c.s}"` : "";
+    return typeof c.v === "number" ? `<c r="${ref}"${s}><v>${c.v}</v></c>`
+      : `<c r="${ref}"${s} t="inlineStr"><is><t xml:space="preserve">${xml(c.v)}</t></is></c>`;
+  }).join("") + `</row>`); };
+  filasCab.forEach(fila);
+  const filaCab = r + 1;
+  fila(cabecera.map(v => ({ v, s: 1 })));
+  filas.forEach(fila);
+  const ultima = col(cabecera.length - 1);
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<sheetViews><sheetView workbookViewId="0"><pane ySplit="${filaCab}" topLeftCell="A${filaCab + 1}" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>
+<cols>${anchos.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`).join("")}</cols>
+<sheetData>${out.join("")}</sheetData>
+${filas.length ? `<autoFilter ref="A${filaCab}:${ultima}${r}"/>` : ""}
+</worksheet>`;
+}
+
+function libroXLSX(nombreHoja, hoja) {
+  return zip([
+    ["[Content_Types].xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`],
+    ["_rels/.rels", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`],
+    ["xl/workbook.xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="${xml(nombreHoja)}" sheetId="1" r:id="rId1"/></sheets>${hoja.includes("<autoFilter") ? `<definedNames><definedName name="_xlnm._FilterDatabase" localSheetId="0" hidden="1">'${xml(nombreHoja)}'!${hoja.match(/<autoFilter ref="([^"]+)"/)[1].replace(/([A-Z]+)(\d+)/g, "$$$1$$$2")}</definedName></definedNames>` : ""}</workbook>`],
+    ["xl/_rels/workbook.xml.rels", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`],
+    ["xl/styles.xml", ESTILOS],
+    ["xl/worksheets/sheet1.xml", hoja],
+  ]);
+}
+
+function filaCambio(f, previas = []) {
+  const k = { "t-anadido": 1, "t-eliminado": 2, "t-modificado": 3 }[claseTipo(f[2])] || 0;
+  const [fecha, apartado, tipo, elem, campo, antes, despues] = f;
+  return [{ v: serie(fecha), s: 8 + k }, ...previas.map(v => ({ v, s: 4 + k })),
+    ...[nombreApartado(apartado), tipo, elem, campo ? nombreCampo(campo) : "", antes, despues].map(v => ({ v, s: 4 + k }))];
+}
+
+function descargarExcel(p) {
+  const desde = fechaES(D.fotos[0]), hasta = fechaES(D.fotos.at(-1));
+  const cab = ["Fecha", "Apartado", "Tipo", "Elemento", "Campo", "Antes", "Después"];
+  let hoja, nombreHoja, fichero;
+  if (p) {
+    const et = (k, v) => [{ v: k, s: 3 }, { v: v || "" }];
+    hoja = hojaXML([
+      [{ v: `${p.n} — historial de cambios`, s: 2 }],
+      et("Nº registro", p.r), et("Materia activa", p.m), et("Titular", p.t), et("Formulado", p.f),
+      et("Estado", p.en ? p.e : "Dado de baja del registro"), et("Caducidad", fechaReg(p.c)),
+      et("Periodo vigilado", `${desde} – ${hasta}`), [],
+    ], cab, (D.cambios[p.r] || []).map(f => filaCambio(f)), [16, 20, 13, 38, 20, 50, 50]);
+    nombreHoja = "Historial";
+    fichero = `FitoWatch_${p.n}_${p.r}`;
+  } else {
+    const filas = [];
+    for (const q of D.productos) for (const f of D.cambios[q.r] || []) filas.push([f, q]);
+    filas.sort((a, b) => b[0][0].localeCompare(a[0][0]) || a[1].n.localeCompare(b[1].n, "es"));
+    hoja = hojaXML([
+      [{ v: "Historial de cambios — Registro de Productos Fitosanitarios (MAPA)", s: 2 }],
+      [{ v: "Periodo vigilado", s: 3 }, { v: `${desde} – ${hasta}` }], [],
+    ], ["Fecha", "Nº registro", "Nombre", "Materia activa", ...cab.slice(1)],
+      filas.map(([f, q]) => filaCambio(f, [q.r, q.n, q.m])), [16, 13, 26, 28, 18, 13, 34, 18, 44, 44]);
+    nombreHoja = "Historial";
+    fichero = `FitoWatch_historial_completo_${D.fotos.at(-1)}`;
+  }
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(libroXLSX(nombreHoja, hoja));
+  a.download = fichero.replace(/[\\/:*?"<>|]+/g, "-").replace(/\s+/g, "_") + ".xlsx";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+}
+
+arrancar();
+</script>
+</body>
+</html>
